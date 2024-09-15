@@ -1,4 +1,6 @@
 from djongo import models as mongo_models
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import check_password
 
 
 class Member(mongo_models.Model):
@@ -17,3 +19,9 @@ class Member(mongo_models.Model):
 
     def __str__(self):
         return self.username
+    
+    def set_password(self, password):
+        self.password = make_password(password)
+
+    def check_password(self, password):
+        return check_password(password, self.password)
