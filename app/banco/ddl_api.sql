@@ -67,7 +67,7 @@ CREATE TABLE assest_trade_bills (
     state  VARCHAR(250),
     payer_id  VARCHAR(250),
     endorser_original_id  VARCHAR(250),
-    new_due_date DATETIME,
+    new_due_date DATETIME, 
     participant_id  VARCHAR(250),
     ballast_kind  VARCHAR(250),
     invoice_number  VARCHAR(250),
