@@ -3,8 +3,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from member.models import Member
-from member.serializers import MemberSerializer
-from django.contrib.auth import authenticate
+from member.serializers import MemberSerializer, MemberLoginSerializer
+from django.conf import settings
+
+import jwt
+import datetime
 
 
 class MemberListCreateAPIView(APIView):
@@ -59,18 +62,31 @@ class MemberDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class LoginAPIView(APIView):
-    def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        user = authenticate(email=email, password=password)
-        if user is not None:
-            return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+class MemberLoginView(APIView):
+    def post(self, request):
+        serializer = MemberLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        member = serializer.validated_data["member"]
+        
+        access_payload = {
+            "id": str(member._id),
+            "username": member.username,
+            "email": member.email,
+            "first_name": member.first_name,
+            "last_name": member.last_name,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
+            "iat": datetime.datetime.utcnow()
+        }
+        access_token = jwt.encode(access_payload, settings.SECRET_KEY, algorithm="HS256")
 
+        refresh_payload = {
+            "id": str(member._id),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),
+            "iat": datetime.datetime.utcnow()
+        }
+        refresh_token = jwt.encode(refresh_payload, settings.SECRET_KEY, algorithm="HS256")
 
-# Example Permission Custom
-
-# from .permissions import IsOwnerOrReadOnly
-# class MemberDetailAPIView(APIView):
-#     permission_classes = [IsOwnerOrReadOnly]
+        return Response({
+            "refresh": refresh_token,
+            "access": access_token,
+        }, status=status.HTTP_200_OK)

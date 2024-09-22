@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Member
+from member.models import Member
 
 class MemberSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source="_id", read_only=True)
@@ -28,3 +28,23 @@ class MemberSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data["password"])
         instance.save()
         return instance
+
+
+class MemberLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        try:
+            member = Member.objects.get(email=email)
+            
+            if not member.check_password(password):
+                raise serializers.ValidationError("Credenciais inválidas.")
+        except Member.DoesNotExist:
+            raise serializers.ValidationError("Usuário não encontrado.")
+
+        attrs["member"] = member
+        return attrs
