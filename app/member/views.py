@@ -2,8 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from member.models import Member
-from member.serializers import MemberSerializer, MemberLoginSerializer
+from member.models import Member, LGPDTerm
+from member.serializers import MemberSerializer, MemberLoginSerializer, LGPDTermSerializer
 from django.conf import settings
 from django.shortcuts import redirect
 from urllib.parse import urlencode
@@ -25,11 +25,22 @@ class MemberListCreateAPIView(APIView):
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
-        serializer = MemberSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        member_serializer = MemberSerializer(data=request.data)
+        
+        if member_serializer.is_valid():
+            member = member_serializer.save()
+            lgpd_data = {
+                "user_email": member.email
+            }
+            lgpd_serializer = LGPDTermSerializer(data=lgpd_data)
+            if lgpd_serializer.is_valid():
+                lgpd_serializer.save()
+            else:
+                return Response(lgpd_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(member_serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MemberDetailAPIView(APIView):
@@ -54,7 +65,11 @@ class MemberDetailAPIView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = MemberSerializer(member, data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            member = serializer.save()
+            LGPDTerm.objects.update_or_create(
+                user_email=member.email,
+                defaults={'acceptance_date': datetime.datetime.utcnow()}
+            )
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
