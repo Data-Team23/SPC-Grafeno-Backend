@@ -41,8 +41,14 @@ class MemberLoginSerializer(serializers.Serializer):
         try:
             member = Member.objects.get(email=email)
             
-            if not member.check_password(password):
-                raise serializers.ValidationError("Credenciais inválidas.")
+            if member.password:
+                if not member.check_password(password):
+                    raise serializers.ValidationError("Credenciais inválidas.")
+            else:
+                raise serializers.ValidationError(
+                    "Este usuário pode ter se registrado usando o login do Google. Tente fazer login com Google."
+                )
+
         except Member.DoesNotExist:
             raise serializers.ValidationError("Usuário não encontrado.")
 
