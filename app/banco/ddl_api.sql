@@ -54,7 +54,7 @@ CREATE TABLE fk_authorized_third_party_participants (
     FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
 
-CREATE TABLE assest_trade_bills (
+CREATE TABLE assets_trade_bills (
     id VARCHAR(250) PRIMARY KEY,
     due_date DATETIME,
     nfe_number  VARCHAR(250),
