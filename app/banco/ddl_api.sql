@@ -28,33 +28,30 @@ CREATE TABLE participants (
     state  VARCHAR(250),
     contact_phone_number  VARCHAR(250),
     document_number  VARCHAR(250),
-    authorized_third_party_id  VARCHAR(250),
     company_name  VARCHAR(250),
     kind  VARCHAR(250),
     paymaster_id  VARCHAR(250),
-    FOREIGN KEY (authorized_third_party_id) REFERENCES authorized_third_parties(id),
     FOREIGN KEY (paymaster_id) REFERENCES paymasters(id)
+);
+
+CREATE TABLE participant_authorized_third_parties (
+    id VARCHAR(250) PRIMARY KEY,
+    participant_id  VARCHAR(250),
+    authorized_third_party_id  VARCHAR(250) UNIQUE,
+    created_at  DATETIME,
+    updated_at DATETIME,
+    state  VARCHAR(250),
+    approved_at DATETIME,
+    rejected_at DATETIME,
+    FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
 
 CREATE TABLE fk_authorized_third_party_participants (
     authorized_third_party_id  VARCHAR(250),
     participant_id  VARCHAR(250),
     PRIMARY KEY (authorized_third_party_id, participant_id),
-    FOREIGN KEY (authorized_third_party_id) REFERENCES authorized_third_parties(id),
+    FOREIGN KEY (authorized_third_party_id) REFERENCES participant_authorized_third_parties(authorized_third_party_id),
     FOREIGN KEY (participant_id) REFERENCES participants(id)
-);
-
-CREATE TABLE participant_authorized_third_parties (
-    id VARCHAR(250) PRIMARY KEY,
-    participant_id  VARCHAR(250),
-    authorized_third_party_id  VARCHAR(250),
-    created_at  DATETIME,
-    updated_at DATETIME,
-    state  VARCHAR(250),
-    approved_at DATETIME,
-    rejected_at DATETIME,
-    FOREIGN KEY (participant_id) REFERENCES participants(id),
-    FOREIGN KEY (authorized_third_party_id) REFERENCES authorized_third_parties(id)
 );
 
 CREATE TABLE assest_trade_bills (
