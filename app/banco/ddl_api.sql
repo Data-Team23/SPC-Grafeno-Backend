@@ -1,3 +1,27 @@
+CREATE TABLE paymasters (
+    id VARCHAR PRIMARY KEY,
+    kind  VARCHAR(250),
+    name  VARCHAR(250),
+    document  VARCHAR(250),
+    email_primary  VARCHAR(250),
+    email_secondary  VARCHAR(250),
+    deleted_at DATE,
+    created_at DATE,
+    updated_at DATE
+);
+
+CREATE TABLE assets_parts (
+    id VARCHAR PRIMARY KEY,
+    name  VARCHAR(250),
+    document_number  VARCHAR(250),
+    contact_email  VARCHAR(250),
+    contact_phone_number  VARCHAR(250),
+    deleted_at DATETIME,
+    created_at DATETIME,
+    updated_at DATETIME,
+    type  VARCHAR(250)
+);
+
 CREATE TABLE participants (
     id VARCHAR(250) PRIMARY KEY,
     name VARCHAR(250),
@@ -33,31 +57,6 @@ CREATE TABLE participant_authorized_third_parties (
     FOREIGN KEY (authorized_third_party_id) REFERENCES authorized_third_parties(id)
 );
 
-CREATE TABLE participant_authorized_third_parties (
-    id VARCHAR(250) PRIMARY KEY,
-    participant_id  VARCHAR(250),
-    authorized_third_party_id  VARCHAR(250),
-    created_at  DATETIME,
-    updated_at DATETIME,
-    state  VARCHAR(250),
-    approved_at DATETIME,
-    rejected_at DATETIME,
-    FOREIGN KEY (participant_id) REFERENCES participants(id),
-    FOREIGN KEY (authorized_third_party_id) REFERENCES authorized_third_parties(id)
-);
-
-CREATE TABLE paymasters (
-    id VARCHAR PRIMARY KEY,
-    kind  VARCHAR(250),
-    name  VARCHAR(250),
-    document  VARCHAR(250),
-    email_primary  VARCHAR(250),
-    email_secondary  VARCHAR(250),
-    deleted_at DATE,
-    created_at DATE,
-    updated_at DATE
-);
-
 CREATE TABLE assest_trade_bills (
     id VARCHAR(250) PRIMARY KEY,
     due_date DATETIME,
@@ -77,16 +76,4 @@ CREATE TABLE assest_trade_bills (
     FOREIGN KEY (payer_id) REFERENCES participants(id),
     FOREIGN KEY (endorser_original_id) REFERENCES participants(id),
     FOREIGN KEY (participant_id) REFERENCES participants(id)
-);
-
-CREATE TABLE assets_parts (
-    id VARCHAR PRIMARY KEY,
-    name  VARCHAR(250),
-    document_number  VARCHAR(250),
-    contact_email  VARCHAR(250),
-    contact_phone_number  VARCHAR(250),
-    deleted_at DATETIME,
-    created_at DATETIME,
-    updated_at DATETIME,
-    type  VARCHAR(250)
 );
