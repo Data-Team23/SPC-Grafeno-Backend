@@ -70,7 +70,7 @@ CREATE TABLE assets_trade_bills (
     payment_place  VARCHAR(250),
     update_reason_kind  VARCHAR(250),
     finished_at  DATETIME,
-    FOREIGN KEY (payer_id) REFERENCES participants(id),
-    FOREIGN KEY (endorser_original_id) REFERENCES participants(id),
+    FOREIGN KEY (payer_id) REFERENCES assets_parts(id),
+    FOREIGN KEY (endorser_original_id) REFERENCES assets_parts(id),
     FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
