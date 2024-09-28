@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from member.models import Member, LGPDTerm
-from member.serializers import MemberSerializer, MemberLoginSerializer, LGPDTermSerializer
+from member.serializers import MemberSerializer, MemberLoginSerializer, LGPDTermSerializer, UpdateMemberProfileSerializer
 from django.conf import settings
 from django.shortcuts import redirect
 from urllib.parse import urlencode
@@ -44,39 +44,46 @@ class MemberListCreateAPIView(APIView):
 
 
 class MemberDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self, pk):
+    def get_object(self, cpf):
         try:
-            return Member.objects.get(pk=pk)
+            return Member.objects.get(cpf=cpf)
         except Member.DoesNotExist:
             return None
 
-    def get(self, request, pk, *args, **kwargs):
-        member = self.get_object(pk)
+    def get(self, request, cpf, *args, **kwargs):
+        member = self.get_object(cpf)
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = MemberSerializer(member)
         return Response(serializer.data)
 
-    def put(self, request, pk, *args, **kwargs):
-        member = self.get_object(pk)
+    def put(self, request, cpf, *args, **kwargs):
+        member = self.get_object(cpf)
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = MemberSerializer(member, data=request.data)
+        serializer = UpdateMemberProfileSerializer(member, data=request.data)
         if serializer.is_valid():
             member = serializer.save()
             LGPDTerm.objects.update_or_create(
                 user_email=member.email,
-                defaults={'acceptance_date': datetime.datetime.utcnow()}
+                defaults={"acceptance_date": datetime.datetime.utcnow()}
             )
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, pk, *args, **kwargs):
-        member = self.get_object(pk)
+    def delete(self, request, cpf, *args, **kwargs):
+        member = self.get_object(cpf)
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        LGPDTerm.objects.update_or_create(
+            user_email=member.email,
+            defaults={
+                "acceptance_date": datetime.datetime.utcnow(),
+                "update_logs": "Usuário optou por deletar sua conta."
+            }
+        )
+
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

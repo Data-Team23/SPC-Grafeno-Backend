@@ -90,3 +90,14 @@ class LGPDTermSerializer(serializers.ModelSerializer):
         instance.update_logs = validated_data.get("update_logs", instance.update_logs)
         instance.save()
         return instance
+    
+
+class UpdateMemberProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ["first_name", "last_name", "contato"]
+        extra_kwargs = {
+            "first_name": {"required": False},
+            "last_name": {"required": False},
+            "contato": {"required": False},
+        }
