@@ -89,9 +89,10 @@ class MemberLoginView(APIView):
         
         access_payload = {
             "id": str(member._id),
-            "username": member.username,
             "email": member.email,
             "first_name": member.first_name,
+            "cpf": member.cpf,
+            "contato": member.contato,
             "last_name": member.last_name,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
             "iat": datetime.datetime.utcnow()

@@ -1,12 +1,23 @@
 from rest_framework import serializers
 from member.models import Member, LGPDTerm
 
+
 class MemberSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source="_id", read_only=True)
 
     class Meta:
         model = Member
-        fields = ["id", "email", "first_name", "last_name", "password", "created_at", "updated_at"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "password",
+            "cpf",
+            "contato",
+            "created_at",
+            "updated_at"
+        ]
         extra_kwargs = {
             "password": {"write_only": True},
             "created_at": {"read_only": True},
@@ -23,10 +34,13 @@ class MemberSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get("email", instance.email)
         instance.first_name = validated_data.get("first_name", instance.first_name)
         instance.last_name = validated_data.get("last_name", instance.last_name)
+        instance.cpf = validated_data.get("cpf", instance.cpf)
+        instance.contato = validated_data.get("contato", instance.contato)
         if "password" in validated_data:
             instance.set_password(validated_data["password"])
         instance.save()
         return instance
+
 
 
 class MemberLoginSerializer(serializers.Serializer):

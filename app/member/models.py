@@ -14,13 +14,14 @@ class Member(mongo_models.Model):
     created_at = mongo_models.DateTimeField(auto_now_add=True)
     updated_at = mongo_models.DateTimeField(auto_now=True)
     last_login = mongo_models.DateTimeField(null=True, blank=True)
+    is_admin = mongo_models.BooleanField(default=False)
 
     class Meta:
         _use_db = "nonrel"
         ordering = ("-created_at",)
 
     def __str__(self):
-        return self.username
+        return self.email
     
     def set_password(self, password):
         self.password = make_password(password)
