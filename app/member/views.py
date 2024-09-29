@@ -61,14 +61,18 @@ class MemberDetailAPIView(APIView):
         member = self.get_object(cpf)
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
+
         serializer = UpdateMemberProfileSerializer(member, data=request.data)
         if serializer.is_valid():
             member = serializer.save()
-            LGPDTerm.objects.update_or_create(
+
+            LGPDTerm.objects.create(
                 user_email=member.email,
-                defaults={"acceptance_date": datetime.datetime.utcnow()}
+                acceptance_date=datetime.datetime.utcnow()
             )
+
             return Response(serializer.data)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, cpf, *args, **kwargs):
@@ -101,6 +105,7 @@ class MemberLoginView(APIView):
             "cpf": member.cpf,
             "contato": member.contato,
             "last_name": member.last_name,
+            "is_admin": member.is_admin,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
             "iat": datetime.datetime.utcnow()
         }

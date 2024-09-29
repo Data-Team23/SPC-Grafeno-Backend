@@ -16,7 +16,8 @@ class MemberSerializer(serializers.ModelSerializer):
             "cpf",
             "contato",
             "created_at",
-            "updated_at"
+            "updated_at",
+            "is_admin",
         ]
         extra_kwargs = {
             "password": {"write_only": True},
@@ -36,6 +37,7 @@ class MemberSerializer(serializers.ModelSerializer):
         instance.last_name = validated_data.get("last_name", instance.last_name)
         instance.cpf = validated_data.get("cpf", instance.cpf)
         instance.contato = validated_data.get("contato", instance.contato)
+        instance.is_admin = validated_data.get("is_admin", instance.is_admin)
         if "password" in validated_data:
             instance.set_password(validated_data["password"])
         instance.save()
@@ -95,9 +97,10 @@ class LGPDTermSerializer(serializers.ModelSerializer):
 class UpdateMemberProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
-        fields = ["first_name", "last_name", "contato"]
+        fields = ["first_name", "last_name", "contato", "is_admin"]
         extra_kwargs = {
             "first_name": {"required": False},
             "last_name": {"required": False},
             "contato": {"required": False},
+            "is_admin": {"required": False}
         }
