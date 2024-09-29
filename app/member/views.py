@@ -101,6 +101,7 @@ class MemberLoginView(APIView):
             "cpf": member.cpf,
             "contato": member.contato,
             "last_name": member.last_name,
+            "is_admin": member.is_admin,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
             "iat": datetime.datetime.utcnow()
         }
