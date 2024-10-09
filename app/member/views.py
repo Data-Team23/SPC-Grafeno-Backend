@@ -8,11 +8,50 @@ from django.conf import settings
 from django.shortcuts import redirect
 from urllib.parse import urlencode
 from django.views import View
+from django.http import HttpResponse
+from bson import ObjectId
 
 import requests
 import jwt
 import datetime
+import csv
 
+class ExportCSVAPIView(APIView):
+    permission_classes = [AllowAny]  # Defina as permissões conforme necessário
+
+    def get(self, request, *args, **kwargs):
+        id_user = kwargs.get('_id')
+
+        # Verifica se id_user é um ObjectId válido
+        if not ObjectId.is_valid(id_user):
+            return Response({"detail": "ID inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Usa o ObjectId para buscar o membro
+            member = Member.objects.get(_id=ObjectId(id_user))
+        except Member.DoesNotExist:
+            return Response({"detail": "Usuário não encontrado!"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": f"Erro interno: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Converte o objeto em dicionário
+        serializer = MemberSerializer(member)
+        data = serializer.data
+
+        # Cria uma resposta HTTP com o CSV
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{id_user}_data.csv"'
+
+        # Cria um escritor CSV
+        writer = csv.writer(response)
+
+        # Escreve o cabeçalho (nomes das colunas)
+        writer.writerow(data.keys())
+
+        # Escreve os dados do membro
+        writer.writerow(data.values())
+
+        return response
 
 class MemberListCreateAPIView(APIView):
     queryset = Member.objects.all()
