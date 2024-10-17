@@ -68,26 +68,24 @@ class MemberListCreateAPIView(APIView):
         
         if member_serializer.is_valid():
             member = member_serializer.save()
-            lgpd_data = {
-                "user_email": member.email
-            }
-            lgpd_serializer = LGPDTermSerializer(data=lgpd_data)
-            if lgpd_serializer.is_valid():
-                lgpd_serializer.save()
-            else:
-                return Response(lgpd_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            LGPDTerm.objects.create(
+                user_email=member.email,
+                acceptance_date=datetime.datetime.utcnow(),
+                update_logs="Usuário aceitou os termos e criou sua conta."
+            )
 
             return Response(member_serializer.data, status=status.HTTP_201_CREATED)
-        
-        return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class MemberDetailAPIView(APIView):
     def get_object(self, cpf):
-        try:
-            return Member.objects.get(cpf=cpf)
-        except Member.DoesNotExist:
-            return None
+        queryset = Member.objects.filter(cpf=cpf)
+
+        if queryset.exists():
+            return queryset.first()
+        return None
 
     def get(self, request, cpf, *args, **kwargs):
         member = self.get_object(cpf)
@@ -107,7 +105,8 @@ class MemberDetailAPIView(APIView):
 
             LGPDTerm.objects.create(
                 user_email=member.email,
-                acceptance_date=datetime.datetime.utcnow()
+                acceptance_date=datetime.datetime.utcnow(),
+                update_logs="Usuário atualizou sua conta."
             )
 
             return Response(serializer.data)
@@ -119,16 +118,15 @@ class MemberDetailAPIView(APIView):
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        LGPDTerm.objects.update_or_create(
+        LGPDTerm.objects.create(
             user_email=member.email,
-            defaults={
-                "acceptance_date": datetime.datetime.utcnow(),
-                "update_logs": "Usuário optou por deletar sua conta."
-            }
+            acceptance_date=datetime.datetime.utcnow(),
+            update_logs="Usuário optou por deletar sua conta."
         )
 
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 
 class MemberLoginView(APIView):
