@@ -10,7 +10,7 @@ class Member(mongo_models.Model):
     last_name = mongo_models.CharField(max_length=30, blank=True)
     password = mongo_models.CharField(max_length=128)
     cpf = mongo_models.CharField(max_length=11, unique=True, default="")
-    contato = mongo_models.CharField(max_length=15, blank=True,  default="")
+    contato = mongo_models.CharField(max_length=15, blank=True, default="")
     created_at = mongo_models.DateTimeField(auto_now_add=True)
     updated_at = mongo_models.DateTimeField(auto_now=True)
     last_login = mongo_models.DateTimeField(null=True, blank=True)
@@ -31,11 +31,14 @@ class Member(mongo_models.Model):
 
 
 class LGPDTerm(mongo_models.Model):
-    _id = mongo_models.ObjectIdField(primary_key=True)
-    user_email = mongo_models.EmailField(max_length=254)
+    user = mongo_models.ForeignKey(Member, on_delete=mongo_models.CASCADE)
+    logs = mongo_models.TextField(blank=True, null=True)
+    action_type = mongo_models.CharField(max_length=20, choices=[
+        ("acceptance", "Acceptance"),
+        ("update", "Update"),
+        ("revoke", "Revoke"),
+    ])
     acceptance_date = mongo_models.DateTimeField(auto_now_add=True)
-    update_logs = mongo_models.TextField(blank=True, null=True)
-    created_at = mongo_models.DateTimeField(auto_now_add=True)
 
     class Meta:
         _use_db = "nonrel"

@@ -1,5 +1,49 @@
 from django.contrib import admin
-from member import models
+from member.models import Member, LGPDTerm
+from django.utils import timezone
 
-admin.site.register(models.Member)
-admin.site.register(models.LGPDTerm)
+
+class MemberAdmin(admin.ModelAdmin):
+    list_display = ("email", "first_name", "last_name", "cpf", "is_admin", "created_at")
+    list_filter = ("is_admin", "created_at")
+    search_fields = ("email", "first_name", "last_name", "cpf")
+    list_display_links = ("email", "first_name")
+
+    exclude = ("created_at",)
+
+    fieldsets = (
+        (None, {
+            "fields": ("email", "first_name", "last_name", "cpf", "contato", "is_admin", "last_login"),
+        }),
+        ("Autenticação", {
+            "fields": ("password",),
+            "classes": ("collapse",),
+        }),
+    )
+
+    def save_model(self, request, obj, change):
+        if not change or (obj.password and obj.password != obj._original_password):
+            obj.set_password(obj.password)
+        super().save_model(request, obj, change)
+
+
+admin.site.register(Member, MemberAdmin)
+
+class LGPDTermAdmin(admin.ModelAdmin):
+    list_display = ("user", "acceptance_date", "action_type", "logs")
+    list_filter = ("action_type", "acceptance_date")
+    search_fields = ("user__email", "logs", "action_type")
+    exclude = ("acceptance_date",)
+
+    fieldsets = (
+        (None, {
+            "fields": ("user", "action_type", "logs"),
+        }),
+    )
+
+    def save_model(self, request, obj, change):
+        if not change:
+            obj.acceptance_date = timezone.now()
+        super().save_model(request, obj, change)
+
+admin.site.register(LGPDTerm, LGPDTermAdmin)
