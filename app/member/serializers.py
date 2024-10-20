@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from member.models import Member, LGPDTerm
+from member.models import Member
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -70,29 +70,6 @@ class MemberLoginSerializer(serializers.Serializer):
         attrs["member"] = member
         return attrs
 
-
-class LGPDTermSerializer(serializers.ModelSerializer):
-    id = serializers.CharField(source="_id", read_only=True)
-
-    class Meta:
-        model = LGPDTerm
-        fields = ["id", "user_email", "acceptance_date", "update_logs", "created_at"]
-        extra_kwargs = {
-            "acceptance_date": {"read_only": True},
-            "created_at": {"read_only": True},
-        }
-
-    def create(self, validated_data):
-        lgpd_term = LGPDTerm(**validated_data)
-        lgpd_term.save()
-        return lgpd_term
-
-    def update(self, instance, validated_data):
-        instance.user_email = validated_data.get("user_email", instance.user_email)
-        instance.update_logs = validated_data.get("update_logs", instance.update_logs)
-        instance.save()
-        return instance
-    
 
 class UpdateMemberProfileSerializer(serializers.ModelSerializer):
     class Meta:

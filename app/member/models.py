@@ -15,6 +15,7 @@ class Member(mongo_models.Model):
     updated_at = mongo_models.DateTimeField(auto_now=True)
     last_login = mongo_models.DateTimeField(null=True, blank=True)
     is_admin = mongo_models.BooleanField(default=False)
+    otp = mongo_models.CharField(max_length=6, blank=True, null=True)
 
     class Meta:
         _use_db = "nonrel"
@@ -28,17 +29,11 @@ class Member(mongo_models.Model):
 
     def check_password(self, password):
         return check_password(password, self.password)
+    
+    @property
+    def is_authenticated(self):
+        return True
 
-
-class LGPDTerm(mongo_models.Model):
-    user = mongo_models.ForeignKey(Member, on_delete=mongo_models.CASCADE)
-    logs = mongo_models.TextField(blank=True, null=True)
-    action_type = mongo_models.CharField(max_length=20, choices=[
-        ("acceptance", "Acceptance"),
-        ("update", "Update"),
-        ("revoke", "Revoke"),
-    ])
-    acceptance_date = mongo_models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        _use_db = "nonrel"
+    @property
+    def is_anonymous(self):
+        return False

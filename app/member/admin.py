@@ -1,5 +1,5 @@
 from django.contrib import admin
-from member.models import Member, LGPDTerm
+from member.models import Member
 from django.utils import timezone
 
 
@@ -28,22 +28,3 @@ class MemberAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Member, MemberAdmin)
-
-class LGPDTermAdmin(admin.ModelAdmin):
-    list_display = ("user", "acceptance_date", "action_type", "logs")
-    list_filter = ("action_type", "acceptance_date")
-    search_fields = ("user__email", "logs", "action_type")
-    exclude = ("acceptance_date",)
-
-    fieldsets = (
-        (None, {
-            "fields": ("user", "action_type", "logs"),
-        }),
-    )
-
-    def save_model(self, request, obj, change):
-        if not change:
-            obj.acceptance_date = timezone.now()
-        super().save_model(request, obj, change)
-
-admin.site.register(LGPDTerm, LGPDTermAdmin)

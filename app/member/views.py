@@ -1,57 +1,22 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from member.models import Member, LGPDTerm
-from member.serializers import MemberSerializer, MemberLoginSerializer, LGPDTermSerializer, UpdateMemberProfileSerializer
+from rest_framework.permissions import AllowAny
+from member.models import Member
+from member.serializers import MemberSerializer, MemberLoginSerializer
 from django.conf import settings
 from django.shortcuts import redirect
 from urllib.parse import urlencode
 from django.views import View
-from django.http import HttpResponse
-from bson import ObjectId
+from django.contrib.auth import login
+from member.utils.email import send_email
 
 import requests
 import jwt
 import datetime
-import csv
+import random
 
-class ExportCSVAPIView(APIView):
-    permission_classes = [AllowAny]  # Defina as permissões conforme necessário
 
-    def get(self, request, *args, **kwargs):
-        id_user = kwargs.get('_id')
-
-        # Verifica se id_user é um ObjectId válido
-        if not ObjectId.is_valid(id_user):
-            return Response({"detail": "ID inválido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            # Usa o ObjectId para buscar o membro
-            member = Member.objects.get(_id=ObjectId(id_user))
-        except Member.DoesNotExist:
-            return Response({"detail": "Usuário não encontrado!"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"detail": f"Erro interno: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # Converte o objeto em dicionário
-        serializer = MemberSerializer(member)
-        data = serializer.data
-
-        # Cria uma resposta HTTP com o CSV
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="{id_user}_data.csv"'
-
-        # Cria um escritor CSV
-        writer = csv.writer(response)
-
-        # Escreve o cabeçalho (nomes das colunas)
-        writer.writerow(data.keys())
-
-        # Escreve os dados do membro
-        writer.writerow(data.values())
-
-        return response
 
 class MemberListCreateAPIView(APIView):
     queryset = Member.objects.all()
@@ -68,11 +33,7 @@ class MemberListCreateAPIView(APIView):
         
         if member_serializer.is_valid():
             member = member_serializer.save()
-            LGPDTerm.objects.create(
-                user_email=member.email,
-                acceptance_date=datetime.datetime.utcnow(),
-                update_logs="Usuário aceitou os termos e criou sua conta."
-            )
+
 
             return Response(member_serializer.data, status=status.HTTP_201_CREATED)
         else:
@@ -103,12 +64,6 @@ class MemberDetailAPIView(APIView):
         if serializer.is_valid():
             member = serializer.save()
 
-            LGPDTerm.objects.create(
-                user_email=member.email,
-                acceptance_date=datetime.datetime.utcnow(),
-                update_logs="Usuário atualizou sua conta."
-            )
-
             return Response(serializer.data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -118,47 +73,10 @@ class MemberDetailAPIView(APIView):
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        LGPDTerm.objects.create(
-            user_email=member.email,
-            acceptance_date=datetime.datetime.utcnow(),
-            update_logs="Usuário optou por deletar sua conta."
-        )
+
 
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-
-class MemberLoginView(APIView):
-    def post(self, request):
-        serializer = MemberLoginSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        member = serializer.validated_data["member"]
-        
-        access_payload = {
-            "id": str(member._id),
-            "email": member.email,
-            "first_name": member.first_name,
-            "cpf": member.cpf,
-            "contato": member.contato,
-            "last_name": member.last_name,
-            "is_admin": member.is_admin,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
-            "iat": datetime.datetime.utcnow()
-        }
-        access_token = jwt.encode(access_payload, settings.SECRET_KEY, algorithm="HS256")
-
-        refresh_payload = {
-            "id": str(member._id),
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),
-            "iat": datetime.datetime.utcnow()
-        }
-        refresh_token = jwt.encode(refresh_payload, settings.SECRET_KEY, algorithm="HS256")
-
-        return Response({
-            "refresh": refresh_token,
-            "access": access_token,
-        }, status=status.HTTP_200_OK)
 
 
 class GoogleLogin(View):
@@ -224,3 +142,52 @@ class GoogleCallback(View):
 
         redirect_url = f"http://localhost:5173/?access={access_token_jwt}&refresh={refresh_token_jwt}"
         return redirect(redirect_url)
+
+
+class LoginView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+        member = Member.objects.filter(email=email).first()
+
+        if member is None or not member.check_password(password):
+            return Response({"error": "Usuário não encontrado ou senha incorreta."}, status=status.HTTP_404_NOT_FOUND)
+
+        otp_code = str(random.randint(100000, 999999))
+        member.otp = otp_code
+        member.save()
+
+        send_email(member.email, f"Seu código 2FA é: {otp_code}")
+
+        return Response({"message": "Código de autenticação enviado."}, status=status.HTTP_200_OK)
+
+
+class TwoFactorView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        code = request.data.get("otp_code")
+        member = Member.objects.filter(email=email).first()
+
+        if member is None:
+            return Response({"error": "Usuário não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        if code != member.otp:
+            return Response({"message": "OTP inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+        access_payload = {
+            "id": str(member._id),
+            "email": member.email,
+            "first_name": member.first_name,
+            "cpf": member.cpf,
+            "contato": member.contato,
+            "last_name": member.last_name,
+            "is_admin": member.is_admin,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=15),
+            "iat": datetime.datetime.utcnow()
+        }
+        access_token = jwt.encode(access_payload, settings.SECRET_KEY, algorithm="HS256")
+
+        return Response({
+            "access": access_token,
+            "message": "Login bem-sucedido com autenticação de dois fatores."
+        }, status=status.HTTP_200_OK)
