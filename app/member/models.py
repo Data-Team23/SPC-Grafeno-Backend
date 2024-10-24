@@ -37,3 +37,7 @@ class Member(mongo_models.Model):
     @property
     def is_anonymous(self):
         return False
+
+    @property
+    def id(self):
+        return str(self._id)

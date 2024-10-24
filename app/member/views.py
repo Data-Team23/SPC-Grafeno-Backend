@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 from django.views import View
 from django.contrib.auth import login
 from member.utils.email import send_email
+from bson import ObjectId
 
 import requests
 import jwt
@@ -17,27 +18,45 @@ import datetime
 import random
 
 
-
 class MemberListCreateAPIView(APIView):
-    queryset = Member.objects.all()
-    serializer_class = MemberSerializer
     permission_classes = [AllowAny]  
 
-    def get(self, request, *args, **kwargs):
-        members = Member.objects.all()
-        serializer = MemberSerializer(members, many=True)
-        return Response(serializer.data)
+    def post(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        otp_code = str(random.randint(100000, 999999))
+        member_serializer = MemberSerializer(data=request.data)
+        if member_serializer.is_valid():
+            member = member_serializer.save(otp=otp_code)
+            send_email(member.email, f"Seu código de verificação é: {otp_code}")
+            
+            return Response({
+                "message": "Código de verificação enviado para o e-mail.",
+                "member_id": member.id
+            }, status=status.HTTP_200_OK)
+        
+        return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        member_serializer = MemberSerializer(data=request.data)
+        member_id = request.data.get("member_id")
+        obj_id = ObjectId(member_id)
+        otp_code = request.data.get("otp_code")
         
-        if member_serializer.is_valid():
-            member = member_serializer.save()
+        try:
+            member = Member.objects.get(_id=obj_id)
+        except Member.DoesNotExist:
+            return Response({"error": "Usuário não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if member.otp != otp_code:
+            return Response({"error": "Código OTP incorreto."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        member.otp = None
+        member.save()
 
-
-            return Response(member_serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(member_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Verificação concluída. Usuário registrado com sucesso."}, status=status.HTTP_201_CREATED)
 
 
 class MemberDetailAPIView(APIView):
@@ -72,8 +91,6 @@ class MemberDetailAPIView(APIView):
         member = self.get_object(cpf)
         if not member:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
-
 
         member.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
