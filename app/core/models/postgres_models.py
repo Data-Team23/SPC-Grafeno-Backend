@@ -38,6 +38,11 @@ class Participants(models.Model):
     company_name = models.CharField(max_length=255)
     paymaster_id = models.ForeignKey(Paymasters,on_delete=models.CASCADE)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['paymaster_id'], name='paymaster_id_idx'),
+        ]
+
 
 class ParticipantAuthorizedThirdParties(models.Model):
     id = models.AutoField(primary_key=True)
@@ -50,6 +55,11 @@ class ParticipantAuthorizedThirdParties(models.Model):
     approved_at = models.DateField(null=True)
     rejected_at = models.DateField(null=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['participant_id'], name='participant_id_idx'),
+        ]
+
 
 class FkAuthorizedThirdPartyParticipants(models.Model):
     authorized_third_party_id = models.ForeignKey(ParticipantAuthorizedThirdParties,on_delete=models.CASCADE)
@@ -59,6 +69,10 @@ class FkAuthorizedThirdPartyParticipants(models.Model):
         unique_together = ('authorized_third_party_id', 'participant_id')
         verbose_name = 'Authorized Third Party Participant'
         verbose_name_plural = 'Authorized Third Party Participants'
+        indexes = [
+            models.Index(fields=['authorized_third_party_id'], name='authorized_party_id_idx'),
+            models.Index(fields=['participant_id'], name='participant_id_idx'),
+        ]
 
 
 class AssetTradeBills(models.Model):
@@ -76,3 +90,10 @@ class AssetTradeBills(models.Model):
     invoice_number = models.CharField(max_length=255)
     payment_place = models.CharField(max_length=255)
     update_reason_kind = models.CharField(max_length=255)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['payer_id'], name='payer_id_idx'),
+            models.Index(fields=['endorser_original_id'], name='endorser_original_id_idx'),
+            models.Index(fields=['participant_id'], name='participant_id_idx'),
+        ]
