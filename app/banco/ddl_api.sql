@@ -33,6 +33,8 @@ CREATE TABLE participants (
     paymaster_id  VARCHAR(250),
     FOREIGN KEY (paymaster_id) REFERENCES paymasters(id)
 );
+CREATE INDEX paymaster_id_idx ON participants(paymaster_id);
+
 
 CREATE TABLE participant_authorized_third_parties (
     id VARCHAR(250) PRIMARY KEY,
@@ -45,6 +47,8 @@ CREATE TABLE participant_authorized_third_parties (
     rejected_at DATETIME,
     FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
+CREATE INDEX participant_id_idx ON participant_authorized_third_parties(participant_id);
+
 
 CREATE TABLE fk_authorized_third_party_participants (
     authorized_third_party_id  VARCHAR(250),
@@ -53,6 +57,8 @@ CREATE TABLE fk_authorized_third_party_participants (
     FOREIGN KEY (authorized_third_party_id) REFERENCES participant_authorized_third_parties(authorized_third_party_id),
     FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
+create index authorized_third_party_id_idx on fk_authorized_third_party_participants(authorized_third_party_id);
+create index participant_id_idx on fk_authorized_third_party_participants(participant_id);
 
 CREATE TABLE assets_trade_bills (
     id VARCHAR(250) PRIMARY KEY,
@@ -74,3 +80,8 @@ CREATE TABLE assets_trade_bills (
     FOREIGN KEY (endorser_original_id) REFERENCES assets_parts(id),
     FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
+CREATE INDEX payer_id_idx ON assets_trade_bills(payer_id);
+CREATE INDEX endorser_original_id_idx ON assets_trade_bills(endorser_original_id);
+CREATE INDEX participant_id_idx ON assets_trade_bills(participant_id);
+
+
