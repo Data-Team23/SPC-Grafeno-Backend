@@ -1,10 +1,7 @@
 REM init_environment.bat
 
 REM Start containers
-docker-compose run app sh -c "python manage.py makemigrations core"
-
-REM Start containers
-docker-compose up -d
+docker-compose up --build -d
 
 REM Wait for the containers to be fully up (you may need to adjust the timeout)
 timeout /t 10 /nobreak

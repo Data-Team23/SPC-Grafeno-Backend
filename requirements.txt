@@ -1,0 +1,5 @@
+Django>=4.0
+psycopg2>=2.9
+dnspython
+pymongo>=3.11
+cryptography
