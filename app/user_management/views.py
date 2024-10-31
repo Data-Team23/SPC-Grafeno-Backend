@@ -9,6 +9,11 @@ from django.contrib.auth import authenticate, get_user_model
 from django.utils import timezone
 from datetime import timedelta
 from user_management.serializers import UserSerializer
+from user_management.models import (
+    LGPDTermItem,
+    LGPDGeneralTerm,
+    LGPDUserTermApproval
+)
 
 import random
 import string
@@ -53,6 +58,7 @@ class LoginAPIView(APIView):
         )
 
         user_info = user.decrypt_data()
+        user.login()
         token = {
             'access_token': access_token.token,
             'token_type': 'Bearer',
@@ -71,7 +77,9 @@ class RegisterUserAPIView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         password = data.get("password")
-        
+        general_term_id = data.get("general_term_id")
+        optional_terms = data.get("optional_terms", [])
+
         user = User(
             username=data.get("username"),
             email=data.get("email"),
@@ -83,8 +91,34 @@ class RegisterUserAPIView(APIView):
         user.set_password(password)
         user.save()
 
+        try:
+            general_term = LGPDGeneralTerm.objects.get(id=general_term_id)
+        except LGPDGeneralTerm.DoesNotExist:
+            return Response({"detail": "Termo geral não encontrado."}, status=status.HTTP_400_BAD_REQUEST)
+
+        LGPDUserTermApproval.objects.create(
+            user=user,
+            general_term=general_term,
+            approval_date=timezone.now(),
+            logs="Aprovação do termo geral durante o cadastro do usuário."
+        )
+
+        for term in optional_terms:
+            term_id = term.get("id")
+            try:
+                term_item = LGPDTermItem.objects.get(id=term_id)
+                LGPDUserTermApproval.objects.create(
+                    user=user,
+                    general_term=general_term,
+                    logs=f"Aprovação do termo opcional: {term_item.title}",
+                    term_name=term_item.title
+                )
+            except LGPDTermItem.DoesNotExist:
+                continue
+
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 
 class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):

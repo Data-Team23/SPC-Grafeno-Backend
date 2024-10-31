@@ -26,6 +26,22 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
-admin.site.register(LGPDGeneralTerm)
-admin.site.register(LGPDTermItem)
-admin.site.register(LGPDUserTermApproval)
+
+
+@admin.register(LGPDTermItem)
+class LGPDTermItemAdmin(admin.ModelAdmin):
+    list_display = ("title", "content", "id")
+
+
+@admin.register(LGPDGeneralTerm)
+class LGPDGeneralTermAdmin(admin.ModelAdmin):
+    list_display = ("title", "created_at", "id")
+    search_fields = ("title",)
+    filter_horizontal = ("term_itens",)
+
+
+@admin.register(LGPDUserTermApproval)
+class LGPDUserTermApprovalAdmin(admin.ModelAdmin):
+    list_display = ("user", "general_term", "term_name", "approval_date")
+    search_fields = ("user__username", "general_term__title")
+    readonly_fields = ("approval_date", "logs")

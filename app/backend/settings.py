@@ -141,13 +141,13 @@ REST_FRAMEWORK = {
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'oauth2_provider.backends.OAuth2Backend',  # Adicione este backend
+    'oauth2_provider.backends.OAuth2Backend',
 )
 
 AUTH_USER_MODEL = 'user_management.User'
 
 OAUTH2_PROVIDER = {
-    # this is the list of available scopes
     'SCOPES': {'read': 'Read scope'},
-    'ACCESS_TOKEN_EXPIRE_SECONDS': 36000,  # Tempo de expiração em segundos
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 36000,
 }
+
