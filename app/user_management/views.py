@@ -100,7 +100,7 @@ class RegisterUserAPIView(APIView):
             user=user,
             general_term=general_term,
             approval_date=timezone.now(),
-            logs="Aprovação do termo geral durante o cadastro do usuário."
+            logs="Aprovação do termo geral durante o cadastro do usuário.",
         )
 
         for term in optional_terms:
@@ -111,7 +111,7 @@ class RegisterUserAPIView(APIView):
                     user=user,
                     general_term=general_term,
                     logs=f"Aprovação do termo opcional: {term_item.title}",
-                    term_name=term_item.title
+                    items_term=term_item,
                 )
             except LGPDTermItem.DoesNotExist:
                 continue

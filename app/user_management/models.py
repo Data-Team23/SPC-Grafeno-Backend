@@ -158,9 +158,9 @@ class LGPDUserTermApproval(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     general_term = models.ForeignKey('LGPDGeneralTerm', on_delete=models.CASCADE)
+    items_term = models.ForeignKey('LGPDTermItem', on_delete=models.CASCADE, null=True)
     approval_date = models.DateTimeField(auto_now_add=True)
     logs = models.TextField()
-    term_name = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
-        return f"Aprovação do {self.user.username} para o termo '{self.term_name}'"
+        return f"Aprovação do {self.user.username}"

@@ -42,6 +42,6 @@ class LGPDGeneralTermAdmin(admin.ModelAdmin):
 
 @admin.register(LGPDUserTermApproval)
 class LGPDUserTermApprovalAdmin(admin.ModelAdmin):
-    list_display = ("user", "general_term", "term_name", "approval_date")
+    list_display = ("user", "general_term", "items_term", "approval_date")
     search_fields = ("user__username", "general_term__title")
     readonly_fields = ("approval_date", "logs")
