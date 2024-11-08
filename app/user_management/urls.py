@@ -4,7 +4,6 @@ from user_management.views import (
     RegisterUserAPIView,
     UserRetrieveUpdateDestroyAPIView,
     GeneralAndTermItemsAPIView,
-    UserExportPDFAPIView,
 )
 
 urlpatterns = [
@@ -12,5 +11,4 @@ urlpatterns = [
     path('register/', RegisterUserAPIView.as_view(), name='register'),
     path('me/', UserRetrieveUpdateDestroyAPIView.as_view(), name='user-detail'),
     path('term/', GeneralAndTermItemsAPIView.as_view(), name='term'),
-    path('export-csv/', UserRetrieveUpdateDestroyAPIView.as_view(), name='user-detail'),
 ]
