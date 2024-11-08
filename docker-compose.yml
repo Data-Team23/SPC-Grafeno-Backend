@@ -44,6 +44,45 @@ services:
     depends_on:
       - mongodb
 
+  minio:
+    image: minio/minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: celery -A backend worker -l info -E
+    volumes:
+      - ./app:/app
+    depends_on:
+      - redis
+      - db
+      - mongodb
+      - minio
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.settings
+
+  celery-beat:
+    build: .
+    command: celery -A backend beat -l info
+    volumes:
+      - ./app:/app
+    depends_on:
+      - redis
+      - db
+
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
@@ -54,7 +93,10 @@ services:
     depends_on:
       - db
       - mongodb
+      - redis
+      - minio
 
 volumes:
   postgres_data:
   mongo_data:
+  minio_data:
