@@ -12,3 +12,5 @@ minio
 psycopg2-binary
 redis
 kombu
+reportlab
+django-cors-headers

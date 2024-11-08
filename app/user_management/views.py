@@ -8,7 +8,7 @@ from oauth2_provider.settings import oauth2_settings
 from django.contrib.auth import authenticate, get_user_model
 from django.utils import timezone
 from datetime import timedelta
-from user_management.serializers import UserSerializer
+from user_management.serializers import UserSerializer, LGPDGeneralTermSerializer
 from user_management.models import (
     LGPDTermItem,
     LGPDGeneralTerm,
@@ -167,3 +167,88 @@ class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         self.perform_destroy(self.get_object())
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GeneralAndTermItemsAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        general_terms = LGPDGeneralTerm.objects.all()
+        term_items = LGPDTermItem.objects.all()
+        general_terms_data = LGPDGeneralTermSerializer(general_terms, many=True).data
+
+        return Response(
+            {
+                'general_terms': general_terms_data,
+            },
+            status=status.HTTP_200_OK
+        )
+
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from django.http import HttpResponse
+from io import BytesIO
+from user_management.models import LGPDUserTermApproval
+
+class UserExportPDFAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        user_info = user.decrypt_data()
+        lgpd_logs = LGPDUserTermApproval.objects.filter(user=user)
+
+        # Preparar o buffer para o PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        
+        # Criando os dados para a tabela
+        data = [
+            ['Nome', 'Email', 'CPF', 'Data de Aprovação', 'Termo', 'Logs']  # Cabeçalhos
+        ]
+        
+        # Adicionando os dados do usuário e logs
+        for log in lgpd_logs:
+            data.append([
+                f"{user_info.first_name} {user_info.last_name}",
+                user_info.email,
+                user_info.cpf,
+                log.approval_date.strftime('%d/%m/%Y %H:%M:%S'),
+                log.general_term.title if log.general_term else 'N/A',
+                log.logs,
+            ])
+        
+        # Criando a tabela
+        table = Table(data)
+        
+        # Estilo da tabela
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),  # Cor de fundo para o cabeçalho
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),  # Cor do texto no cabeçalho
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),  # Alinhamento de texto
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),  # Fonte do cabeçalho
+            ('FONTSIZE', (0, 0), (-1, 0), 12),  # Tamanho da fonte no cabeçalho
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),  # Padding no fundo do cabeçalho
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),  # Cor de fundo para as linhas da tabela
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),  # Linha da grade
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),  # Fonte para os dados
+            ('FONTSIZE', (0, 1), (-1, -1), 10),  # Tamanho da fonte para os dados
+            ('TOPPADDING', (0, 1), (-1, -1), 8),  # Padding no topo das células
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 8),  # Padding no fundo das células
+        ])
+        
+        table.setStyle(style)
+        
+        # Construindo o PDF com a tabela
+        elements = [table]
+        doc.build(elements)
+        
+        # Preparar a resposta PDF
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="user_data.pdf"'
+        
+        return response

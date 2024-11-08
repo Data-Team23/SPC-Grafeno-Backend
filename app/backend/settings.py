@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'user_management',
     'django_celery_beat',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -165,3 +168,7 @@ MINIO_ACCESS_KEY = 'minioadmin'
 MINIO_SECRET_KEY = 'minioadmin'
 MINIO_USE_HTTPS = False
 MINIO_BUCKET_NAME = 'backups'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]

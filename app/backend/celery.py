@@ -1,6 +1,7 @@
 import os
 from celery import Celery
 import django
+from datetime import timedelta
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
@@ -17,14 +18,15 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'backup-postgres-daily': {
         'task': 'user_management.tasks.backup_postgres',
-        'schedule': 120.0,
+        'schedule': timedelta(days=1),
     },
     'backup-mongo-encrypt': {
         'task': 'user_management.tasks.backup_mongo_encrypt',
-        'schedule': 120.0,
+        'schedule': timedelta(weeks=1),  
     },
     'backup-mongo-logs': {
         'task': 'user_management.tasks.backup_mongo_logs',
-        'schedule': 120.0,
+        'schedule': timedelta(weeks=1),
     },
 }
+
