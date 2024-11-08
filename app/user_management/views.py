@@ -130,7 +130,39 @@ class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
         return self.request.user
 
     def perform_update(self, serializer):
+        user = self.request.user
+        data = self.request.data
+        optional_terms = data.get("optional_terms", [])
+
         serializer.save()
+
+        general_term_id = data.get("general_term_id")
+        if general_term_id:
+            try:
+                general_term = LGPDGeneralTerm.objects.get(id=general_term_id)
+            except LGPDGeneralTerm.DoesNotExist:
+                return Response({"detail": "Termo geral não encontrado."}, status=status.HTTP_400_BAD_REQUEST)
+
+            for term in optional_terms:
+                term_id = term.get("id")
+                approved = term.get("approved", False)
+
+                try:
+                    term_item = LGPDTermItem.objects.get(id=term_id)
+                except LGPDTermItem.DoesNotExist:
+                    continue
+
+                approval, created = LGPDUserTermApproval.objects.update_or_create(
+                    user=user,
+                    items_term=term_item,
+                    defaults={
+                        'general_term': general_term,
+                        'logs': f"{'Aprovado' if approved else 'Reprovado'} o termo opcional: {term_item.title}",
+                        'approval_date': timezone.now(),
+                    }
+                )
+
+        return Response({"detail": "Usuário e termos atualizados com sucesso."}, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         self.perform_destroy(self.get_object())
