@@ -16,6 +16,46 @@ import jwt
 import datetime
 import csv
 
+class RFMClusterAPIView(APIView):
+    permission_classes = [AllowAny]  # Defina as permissões conforme necessário
+    """
+    Endpoint que envia dados para o modelo de IA externo e retorna os resultados.
+    """
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            # Obter os dados do corpo da requisição
+            data = request.data  # Espera-se uma lista de dicionários [{"recency": ..., "frequency": ..., "monetary": ...}, ...]
+            
+            # Validar os dados recebidos
+            required_columns = ["recency", "frequency", "monetary"]
+            if not all(col in data[0] for col in required_columns):
+                return Response(
+                    {"detail": f"As colunas necessárias são: {', '.join(required_columns)}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # URL do endpoint da IA
+            ia_endpoint = ""  # Endpoint da IA rodando no Jupyter/Flask/etc.
+            
+            # Enviar dados para a IA
+            ia_response = requests.post(ia_endpoint, json=data)
+            
+            # Verificar se a IA retornou sucesso
+            if ia_response.status_code != 200:
+                return Response(
+                    {"detail": "Erro ao comunicar com a IA.", "ia_error": ia_response.json()},
+                    status=ia_response.status_code,
+                )
+
+            # Retornar os resultados da IA para o cliente
+            return Response(ia_response.json(), status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"detail": f"Erro interno: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 class ExportCSVAPIView(APIView):
     permission_classes = [AllowAny]  # Defina as permissões conforme necessário
 
