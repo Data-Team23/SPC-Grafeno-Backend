@@ -10,10 +10,20 @@ import uuid
 
 class ActionLog:
     def __init__(self, user_id, action_type, logs):
-        self.collection = logs_db.ActionLog
         self.user_id = user_id
         self.action_type = action_type
         self.logs = logs
+        self.collection = self.get_collection()
+
+    def get_collection(self):
+        collections = sorted(logs_db.list_collection_names(), reverse=True)
+        last_collection_name = next((c for c in collections if c.startswith("ActionLog_")), None)
+
+        if not last_collection_name or logs_db[last_collection_name].count_documents({}) >= 10000:
+            new_collection_name = f"ActionLog_{len(collections) + 1}"
+            return logs_db[new_collection_name]
+        else:
+            return logs_db[last_collection_name]
 
     def save(self):
         action_log = {

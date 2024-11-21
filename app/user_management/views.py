@@ -18,6 +18,12 @@ from user_management.models import (
 import random
 import string
 
+# PDF
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import csv
+from django.http import HttpResponse
+
 User = get_user_model()
 
 
@@ -152,14 +158,12 @@ class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
                 except LGPDTermItem.DoesNotExist:
                     continue
 
-                approval, created = LGPDUserTermApproval.objects.update_or_create(
+                LGPDUserTermApproval.objects.create(
                     user=user,
                     items_term=term_item,
-                    defaults={
-                        'general_term': general_term,
-                        'logs': f"{'Aprovado' if approved else 'Reprovado'} o termo opcional: {term_item.title}",
-                        'approval_date': timezone.now(),
-                    }
+                    general_term=general_term,
+                    logs=f"{'Aprovado' if approved else 'Reprovado'} o termo opcional: {term_item.title}",
+                    approval_date=timezone.now()
                 )
 
         return Response({"detail": "Usuário e termos atualizados com sucesso."}, status=status.HTTP_200_OK)
@@ -183,3 +187,72 @@ class GeneralAndTermItemsAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class UserExportCSVAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = self.serializer_class(user)
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="user_data.csv"'
+        writer = csv.writer(response)
+        
+        writer.writerow(['Nome', 'Email', 'CPF', 'Data de Aprovação', 'Termo', 'Logs'])
+
+        decrypted_data = serializer.data['decrypted_data']
+
+        writer.writerow([
+            f"{decrypted_data['first_name']} {decrypted_data['last_name']}",
+            decrypted_data['email'],
+            decrypted_data['cpf'],
+            decrypted_data['contato'],
+            decrypted_data['username'],
+        ])
+    
+        return response
+
+
+class UserExportPDFAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = self.serializer_class(user)
+        
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="user_data_report.pdf"'
+
+        p = canvas.Canvas(response, pagesize=letter)
+        width, height = letter
+
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, height - 50, "Relatório de Dados do Usuário")
+
+        decrypted_data = serializer.data['decrypted_data']
+        terms_data = serializer.data['terms_approval']
+
+        p.setFont("Helvetica", 12)
+        p.drawString(100, height - 100, f"Nome: {decrypted_data['first_name']} {decrypted_data['last_name']}")
+        p.drawString(100, height - 120, f"Email: {decrypted_data['email']}")
+        p.drawString(100, height - 140, f"CPF: {decrypted_data['cpf']}")
+        p.drawString(100, height - 160, f"Contato: {decrypted_data['contato']}")
+
+        line_height = 180
+        p.drawString(100, height - line_height, "Termos de Aprovação:")
+
+        for term in terms_data:
+            line_height += 20
+            for key, value in term.items():
+                line_height += 20
+                p.drawString(100, height - line_height, f"{key}: {value}")
+
+        line_height += 40
+
+        p.showPage()
+        p.save()
+
+        return response

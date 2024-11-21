@@ -4,6 +4,7 @@ from user_management.models import LGPDGeneralTerm, LGPDTermItem, LGPDUserTermAp
 
 User = get_user_model()
 
+
 class TermApprovalSerializer(serializers.ModelSerializer):
     term_id = serializers.IntegerField(source='general_term.id')
     approved = serializers.SerializerMethodField()
@@ -11,10 +12,10 @@ class TermApprovalSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LGPDUserTermApproval
-        fields = ['term_id', 'approved', 'logs']
+        fields = ['term_id', 'approved', 'approval_date', 'logs']
 
     def get_approved(self, obj):
-        return obj.approval_date is not None
+        return 'Aprovação' in obj.logs
 
 
 class UserSerializer(serializers.ModelSerializer):
