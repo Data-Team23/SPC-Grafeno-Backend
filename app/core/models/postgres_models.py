@@ -99,3 +99,11 @@ class AsBills(models.Model):
             models.Index(fields=['endorser_original_id'], name='endorser_original_id_idx'),
             models.Index(fields=['participant_id'], name='participant_id_idx'),
         ]
+
+class DBTesting (models.Model):
+    nome = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    idade = models.IntegerField()
+
+    def __str__(self):
+        return self.nome
