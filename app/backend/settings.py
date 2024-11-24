@@ -152,7 +152,7 @@ AUTH_USER_MODEL = 'user_management.User'
 
 OAUTH2_PROVIDER = {
     'SCOPES': {'read': 'Read scope'},
-    'ACCESS_TOKEN_EXPIRE_SECONDS': 36000,
+        'ACCESS_TOKEN_EXPIRE_SECONDS': 36000,
 }
 
 
