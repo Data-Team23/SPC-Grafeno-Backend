@@ -1,0 +1,16 @@
+Django>=4.0
+psycopg2>=2.9
+dnspython
+pymongo>=3.11
+cryptography==39.0.0
+djangorestframework==3.14.0
+django-oauth-toolkit==1.7.0
+celery
+django-celery-beat
+boto3
+minio
+psycopg2-binary
+redis
+kombu
+reportlab
+django-cors-headers
